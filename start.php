@@ -13,6 +13,13 @@ function activity_tabs_init(){
   // default menu items are registered with relative paths
   // need to change it due to different page handlers
   elgg_register_plugin_hook_handler('register', 'menu:filter', 'activity_tabs_filtermenu');
+  
+  // set user activity link on menu:user_hover dropdown
+  $user_activity = elgg_get_plugin_setting('user_activity', 'mt_activity_tabs');
+  
+  if($user_activity != 'no'){
+    elgg_register_plugin_hook_handler('register', 'menu:user_hover', 'activity_tabs_user_hover');
+  }
 }
 
 
@@ -22,8 +29,15 @@ function activity_tabs_pagehandler($page){
   
   $filter_context = $page[0] . '_' . $page[1];
   
+  // set guid
+  if($page[0] == 'user'){
+    $guid = get_user_by_username($page[1])->guid;
+  } else {
+    $guid = $page[1];
+  }
+  
   set_input('filter_context', $filter_context);
-  set_input('activity_tab_guid', $page[1]);
+  set_input('activity_tab_guid', $guid);
   set_input('activity_tab_type', $page[0]);
   
   if(include('pages/mt_activity_tabs.php')){
@@ -148,6 +162,24 @@ function activity_tabs_filtermenu($hook, $type, $returnvalue, $params){
     
     return $returnvalue;
   }
+}
+
+
+//
+//
+// add in the activity to the user hover menu
+function activity_tabs_user_hover($hook, $type, $returnvalue, $params){
+  $user = $params['entity'];
+  
+  $url = elgg_get_site_url() . "activity_tabs/user/{$user->username}";
+	
+	$item = new ElggMenuItem('activity_tabs_user_activity', elgg_echo('activity_tabs'), $url);
+	$item->setSection('action');
+  $item->setPriority(200);
+  
+  $returnvalue[] = $item;
+  
+  return $returnvalue;
 }
 
 elgg_register_event_handler('init', 'system', 'activity_tabs_init');

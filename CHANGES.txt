@@ -1,0 +1,12 @@
+== Version History ==
+
+x.x:
+
+1.1 (06/04/2012):
+
+- Added optional user activity
+
+
+1.0:
+
+- Initial Release

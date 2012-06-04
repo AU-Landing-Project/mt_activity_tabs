@@ -31,6 +31,12 @@ if ($type != 'all') {
 }
 
 switch ($page_type) {
+  case 'user':
+    $title = elgg_echo('activity_tabs:user');
+    $page_filter = 'activity_tab';
+    
+    $options['subject_guid'] = $id;
+    break;
 	case 'collection':
 		$title = elgg_echo('activity_tabs:collection');
 		$page_filter = 'activity_tab';

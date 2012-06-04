@@ -11,7 +11,9 @@ $english = array(
     'activity_tabs:groups' => "Groups",
     'activity_tabs:invalid:id' => "Invalid ID",
     'activity_tabs:name' => "Name",
-    'activity_tabs:priority' => "Order"
+    'activity_tabs:priority' => "Order",
+    'activity_tabs:user' => "User Activity",
+    'activity_tabs:user_activity:description' => "Enable individual user activity on profile menus?"
 );
 					
 add_translation("en",$english);
