@@ -2,6 +2,10 @@
 
 x.x:
 
+1.2 (06/14/2012):
+- Added group display option
+
+
 1.1 (06/04/2012):
 
 - Added optional user activity

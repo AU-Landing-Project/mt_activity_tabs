@@ -80,7 +80,8 @@ echo "<h3>" . elgg_echo('activity_tabs:groups') . "</h3>";
 echo "<table border='1' cellpadding='5' class='activity_tabs_table'>";
 echo "<tr class='even'><td class='column_one'>" . elgg_echo('activity_tabs:name') . "</td>";
 echo "<td>" . elgg_echo('activity_tabs:enabled') . "</td>";
-echo "<td>" . elgg_echo('activity_tabs:priority') . "</td></tr>";
+echo "<td>" . elgg_echo('activity_tabs:priority') . "</td>";
+echo "<td>" . elgg_echo('activity_tabs:group:display') . "</td></tr>";
 
 // even flag
 $even = false;
@@ -114,6 +115,21 @@ foreach ($groups as $group) {
         'name' => "params[{$groupid}_priority]",
         'value' => $value ? $value : 0,
         'options_values' => array(0,1,2,3,4,5,6,7,8,9,10),         
+    );
+        
+    echo "</td><td>" . elgg_view('input/dropdown', $options);
+    
+    // show activity only inside the group, or by all members of the group?
+    // default to all members
+    $value = elgg_get_plugin_user_setting($groupid . '_display', $user->guid, 'mt_activity_tabs');
+    
+    $options = array(
+        'name' => "params[{$groupid}_display]",
+        'value' => $value ? $value : 'global',
+        'options_values' => array(
+            'global' => elgg_echo('activity_tabs:option:group_display:global'),
+            'group' => elgg_echo('activity_tabs:option:group_display:group')
+        ),
     );
         
     echo "</td><td>" . elgg_view('input/dropdown', $options);
