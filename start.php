@@ -19,6 +19,7 @@ function activity_tabs_init(){
   
   if($user_activity != 'no'){
     elgg_register_plugin_hook_handler('register', 'menu:user_hover', 'activity_tabs_user_hover');
+    elgg_register_plugin_hook_handler('register', 'menu:owner_block', 'activity_tabs_user_hover');
   }
 }
 
@@ -171,13 +172,18 @@ function activity_tabs_filtermenu($hook, $type, $returnvalue, $params){
 function activity_tabs_user_hover($hook, $type, $returnvalue, $params){
   $user = $params['entity'];
   
-  $url = elgg_get_site_url() . "activity_tabs/user/{$user->username}";
+  if (elgg_instanceof($user, 'user')) {
+    $url = elgg_get_site_url() . "activity_tabs/user/{$user->username}";
 	
-	$item = new ElggMenuItem('activity_tabs_user_activity', elgg_echo('activity_tabs'), $url);
-	$item->setSection('action');
-  $item->setPriority(200);
-  
-  $returnvalue[] = $item;
+    $item = new ElggMenuItem('activity_tabs_user_activity', elgg_echo('activity_tabs'), $url);
+    
+    if ($type == 'menu:user_hover') {
+      $item->setSection('action');
+      $item->setLinkClass('activity-tabs-user-hover');
+      $item->setPriority(200);
+    }
+    $returnvalue[] = $item;
+  }
   
   return $returnvalue;
 }
