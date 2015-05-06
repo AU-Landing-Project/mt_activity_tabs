@@ -55,82 +55,108 @@ function activity_tabs_pagehandler($page){
  * register links on sidebar
  */
 function activity_tabs_pagesetup($event, $object_type, $object){
-    // register filter tabs
-  $context = elgg_get_context();
-  
-  if(elgg_is_logged_in() && ($context == 'activity' || $context == 'activity_tabs')){
-    $user = elgg_get_logged_in_user_entity();
-    $filter_context = get_input('filter_context', FALSE);
-    $collections = get_user_access_collections($user->guid);
-    $groups = $user->getGroups('', 0);
-    
-    // iterate through collections and add tabs as necessary
-    foreach($collections as $collection){
-      $name = $collection->name;
-      
-      // ignore group acls, they will be done in the groups section
-      if(substr($name, 0, 7) == 'Group: ') {
-        continue;  
-      }
-    
-      $collectionid = "collection_" . $collection->id;
-      $enable = elgg_get_plugin_user_setting($collectionid, $user->guid, 'mt_activity_tabs');
-      $order = elgg_get_plugin_user_setting($collectionid . "_priority", $user->guid, 'mt_activity_tabs');
-      $priority = 500;
-      if(is_numeric($order)){
-        $priority += $order;
-      }
-      
-      if($enable == 'yes'){
-        // we need to create a tab
-        $tab = array(
-            'name' => $collectionid,
-            'text' => $name,
-            'href' => "activity_tabs/collection/{$collection->id}/" . elgg_get_friendly_title($name),
-            'selected' => ($filter_context == $collectionid),
-            'priority' => $priority,
-        );
-            
-        elgg_register_menu_item('filter', $tab);
-      }
-    }
-    
-    
-    // iterate through groups and add tabs as necessary
-    foreach($groups as $group){
-      $name = $group->name;
-    
-      $groupid = "group_" . $group->guid;
-      $enable = elgg_get_plugin_user_setting($groupid, $user->guid, 'mt_activity_tabs');
-      $order = elgg_get_plugin_user_setting($groupid . "_priority", $user->guid, 'mt_activity_tabs');
-      $priority = 500;
-      if(is_numeric($order)){
-        $priority += $order;
-      }
-      
-      if($enable == 'yes'){
-        // we need to create a tab
-        $tab = array(
-            'name' => $groupid,
-            'text' => $name,
-            'href' => "activity_tabs/group/{$group->guid}/" . elgg_get_friendly_title($name),
-            'selected' => ($filter_context == $groupid),
-            'priority' => $priority,
-        );
-            
-        elgg_register_menu_item('filter', $tab);
-      }
-    }
-    
-    // register menu item for configuring tabs
-    $link = array(
-        'name' => 'configure_activity_tabs',
-        'text' => elgg_echo('activity_tabs:configure'),
-        'href' => 'settings/plugins/' . $user->username,
-    );
-    
-    elgg_register_menu_item('page', $link);
-  }
+  if (!elgg_is_logged_in()) {
+		return;
+	}
+
+	if (!elgg_in_context('activity') && !elgg_in_context('activity_tabs')) {
+		return;
+	}
+
+	$dbprefix = elgg_get_config('dbprefix');
+	$priority = 500;
+
+	$user = elgg_get_logged_in_user_entity();
+	$filter_context = get_input('filter_context', FALSE);
+
+	$all_settings = elgg_get_all_plugin_user_settings($user->guid, 'mt_activity_tabs');
+
+	$tabs = array(
+		'group' => array(),
+		'collection' => array(),
+	);
+
+	if (!empty($all_settings)) {
+		foreach ($all_settings as $name => $value) {
+			list($type, $id, $opt) = explode('_', $name);
+			if ($type !== 'group' && $type !== 'collection') {
+				continue;
+			}
+			if (!$opt) {
+				$opt = 'enabled';
+			}
+			$tabs[$type][$id][$opt] = $value;
+		}
+	}
+
+	$collection_ids = array();
+	foreach ($tabs['collection'] as $id => $opts) {
+		$enabled = elgg_extract('enabled', $opts);
+		if ($enabled == 'yes') {
+			$collection_ids[] = (int) $id;
+		}
+	}
+
+	$group_ids = array();
+	foreach ($tabs['group'] as $id => $opts) {
+		$enabled = elgg_extract('enabled', $opts);
+		if ($enabled == 'yes') {
+			$group_ids[] = (int) $id;
+		}
+	}
+
+	if (!empty($collection_ids)) {
+		$collection_ids_in = implode(',', $collection_ids);
+		$query = "SELECT * FROM {$dbprefix}access_collections
+			WHERE owner_guid = {$user->guid} AND id IN ($collection_ids_in) AND name NOT LIKE 'Group:%'";
+		$collections = get_data($query);
+	}
+
+	if (!empty($collections)) {
+
+		// iterate through collections and add tabs as necessary
+		foreach ($collections as $collection) {
+			// we need to create a tab
+			$tab = array(
+				'name' => "collection:$collection->id",
+				'text' => $collection->name,
+				'href' => "activity_tabs/collection/{$collection->id}/" . elgg_get_friendly_title($collection->name),
+				'selected' => (int) $filter_context == (int) $collection->id,
+				'priority' => $priority + (int) $tabs['collection']["$collection->id"]['priority'],
+			);
+			elgg_register_menu_item('filter', $tab);
+		}
+	}
+
+	if (!empty($group_ids)) {
+		$group_ids_in = implode(',', $group_ids);
+		$query = "SELECT * FROM {$dbprefix}groups_entity ge
+			JOIN {$dbprefix}entity_relationships er ON er.guid_two = ge.guid
+			WHERE er.guid_one = {$user->guid} AND ge.guid IN ($group_ids_in)";
+		$groups = get_data($query);
+	}
+
+	if (!empty($groups)) {
+		foreach ($groups as $group) {
+			$tab = array(
+				'name' => "group:$group->guid",
+				'text' => $group->name,
+				'href' => "activity_tabs/group/{$group->guid}/" . elgg_get_friendly_title($group->name),
+				'selected' => (int) $filter_context == (int) $group->guid,
+				'priority' => $priority + (int) $tabs['group']["$group->guid"]['priority'],
+			);
+			elgg_register_menu_item('filter', $tab);
+		}
+	}
+
+	// register menu item for configuring tabs
+	$link = array(
+		'name' => 'configure_activity_tabs',
+		'text' => elgg_echo('activity_tabs:configure'),
+		'href' => 'settings/plugins/' . $user->username,
+	);
+
+	elgg_register_menu_item('page', $link);
 }
 
 
