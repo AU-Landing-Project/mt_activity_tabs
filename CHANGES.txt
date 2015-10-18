@@ -2,6 +2,10 @@
 
 x.x:
 
+2.0.0 ():
+ - Upgrade for Elgg 1.9+
+ - Numerous performance enhancements
+
 1.2 (06/14/2012):
 - Added group display option
 
