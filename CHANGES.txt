@@ -2,7 +2,7 @@
 
 x.x:
 
-2.0.0 ():
+2.0.0 (10/17/2015):
  - Upgrade for Elgg 1.9+
  - Numerous performance enhancements
 
